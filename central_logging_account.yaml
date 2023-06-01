@@ -10,7 +10,7 @@ Parameters:
     Description: Enter the name of the Bucket to store logs
   OrgId:
     Type: String
-    Description: Enter the name of the kinesis firehose delivery stream.
+    Description: Enter the Organizational id.
 
 Resources:
 
