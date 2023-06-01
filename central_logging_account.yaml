@@ -1,0 +1,119 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Set up resources for delivery for centralizing logs to S3 in centralized logging account.
+Parameters: 
+  DeliveryStreamName:
+    Type: String
+    Description: Enter the name of the kinesis firehose delivery stream.
+    Default: "Centralized-Logging-Delivery-Stream"
+  DeliveryBucketName:
+    Type: String
+    Description: Enter the name of the Bucket to store logs
+  OrgId:
+    Type: String
+    Description: Enter the name of the kinesis firehose delivery stream.
+
+Resources:
+
+  FirehoseDeliveryRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: firehose.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: Firehose_Delivery_Policy
+          PolicyDocument:
+            - Version: "2012-10-17"
+              Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:AbortMultipartUpload"
+                  - "s3:GetBucketLocation"
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                  - "s3:ListBucketMultipartUploads"
+                  - "s3:PutObject"
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${DeliveryBucketName}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${DeliveryBucketName}/*"
+              # - Effect: Allow
+              #   Action:
+              #     - "lambda:InvokeFunction"
+              #   Resource:
+              #     - !GetAtt FirehoseDataProcessingFunction.Arn
+
+  KinesisFireHose:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamName: !Ref DeliveryStreamName
+      DeliveryStreamType: "DirectPut"
+      S3DestinationConfiguration:
+        BucketARN: !Sub "arn:${AWS::Partition}:s3:::${DeliveryBucketName}"
+        CompressionFormat: UNCOMPRESSED
+        RoleARN: !GetAtt FirehoseDeliveryRole.Arn
+
+  CWLtoKinesisRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: ""
+            Effect: Allow
+            Principal:
+              Service:
+                - logs.ap-east-1.amazonaws.com
+                - logs.ap-south-2.amazonaws.com
+                - logs.ap-southeast-3.amazonaws.com
+                - logs.ap-southeast-4.amazonaws.com
+                - logs.ap-south-1.amazonaws.com
+                - logs.ap-northeast-3.amazonaws.com
+                - logs.ap-northeast-2.amazonaws.com
+                - logs.ap-southeast-1.amazonaws.com
+                - logs.ap-southeast-2.amazonaws.com
+                - logs.ap-northeast-1.amazonaws.com
+                - logs.ca-central-1.amazonaws.com
+                - logs.eu-central-1.amazonaws.com
+                - logs.eu-west-1.amazonaws.com
+                - logs.eu-west-2.amazonaws.com
+                - logs.eu-south-1.amazonaws.com
+                - logs.eu-west-3.amazonaws.com
+                - logs.eu-south-2.amazonaws.com
+                - logs.eu-north-1.amazonaws.com
+                - logs.eu-central-2.amazonaws.com
+                - logs.me-south-1.amazonaws.com
+                - logs.me-central-1.amazonaws.com
+                - logs.sa-east-1.amazonaws.com
+            Action: "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref OrgId
+      Path: "/"
+      Policies:
+        - PolicyName: Permissions-Policy-For-CWL
+          PolicyDocument:
+            - Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                  - "firehose:PutRecord"
+                  Resource:
+                  - !GetAtt KinesisFireHose.Arn
+
+  LogDestination: 
+    Type: AWS::Logs::Destination
+    Properties: 
+      DestinationName: "CentralLogDestination"
+      RoleArn: !GetAtt CWLtoKinesisRole.Arn
+      TargetArn: !GetAtt KinesisFireHose.Arn
+      DestinationPolicy: !Sub |
+        '{"Version" : "2012-10-17","Statement" : [{"Effect" : "Allow", "Principal" : {"AWS" : "logs.amazonaws.com"}, "Action" : "logs:PutSubscriptionFilter", "Resource" : "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:destination:CentralLogDestination"}]}'
+
+Outputs:
+  LogDestinationARN:
+    Description: ARN of the to deliver log events to.
+    Value: !GetAtt LogDestination.Arn
