@@ -101,6 +101,9 @@ Resources:
 
   LogDestination: 
     Type: AWS::Logs::Destination
+    DependsOn:
+      - KinesisFireHose
+      - CWLtoKinesisRole
     Properties: 
       DestinationName: "CentralLogDestination"
       RoleArn: !GetAtt CWLtoKinesisRole.Arn
