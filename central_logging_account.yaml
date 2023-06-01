@@ -27,8 +27,8 @@ Resources:
       Policies:
         - PolicyName: Firehose_Delivery_Policy
           PolicyDocument:
-            - Version: "2012-10-17"
-              Statement:
+            Version: "2012-10-17"
+            Statement:
               - Effect: Allow
                 Action:
                   - "s3:AbortMultipartUpload"
@@ -91,13 +91,13 @@ Resources:
       Policies:
         - PolicyName: Permissions-Policy-For-CWL
           PolicyDocument:
-            - Version: "2012-10-17"
-              Statement:
-                - Effect: Allow
-                  Action:
-                  - "firehose:PutRecord"
-                  Resource:
-                  - !GetAtt KinesisFireHose.Arn
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                - "firehose:PutRecord"
+                Resource:
+                - !GetAtt KinesisFireHose.Arn
 
   LogDestination: 
     Type: AWS::Logs::Destination
