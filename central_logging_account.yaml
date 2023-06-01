@@ -14,6 +14,73 @@ Parameters:
 
 Resources:
 
+  ProcessCWLtoFirehoseRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal: 
+            Service: "lambda.amazonaws.com"
+          Action: "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: firehoseCloudWatchDataProcessing
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: Allow
+                  Action:
+                    - "logs:CreateLogGroup"
+                    - "logs:CreateLogStream"
+                    - "logs:PutLogEvents"
+                  Resource: "arn:aws:logs:*:*:*"
+
+  FirehoseDataProcessingFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt ProcessCWLtoFirehoseRole.Arn
+      Description: "Firehose cloudwatch data processing"
+      Code:
+        ZipFile: |
+          'use strict';
+          const zlib = require('zlib');
+          function transformLogEvent(logEvent) {
+                return Promise.resolve(`${logEvent.message}`);
+          }
+          exports.handler = (event, context, callback) => {
+              Promise.all(event.records.map(r => {
+                  const buffer = new Buffer(r.data, 'base64');
+                  const decompressed = zlib.gunzipSync(buffer);
+                  const data = JSON.parse(decompressed);
+                  const accountId = data.owner;
+                  
+                  if (data.messageType !== 'DATA_MESSAGE') {
+                      return Promise.resolve({
+                          recordId: r.recordId,
+                          result: 'ProcessingFailed',
+                      });
+                  } else {
+                      const promises = data.logEvents.map(transformLogEvent);
+                      return Promise.all(promises).then(transformed => {
+                          let payload = transformed.reduce((a, v) => a + v, '');
+                          payload += `Account ID: ${accountId}\n`;
+                          const encoded = new Buffer(payload).toString('base64');
+                          console.log('---------------payloadv2:'+JSON.stringify(payload, null, 2));
+                          return {
+                              recordId: r.recordId,
+                              result: 'Ok',
+                              data: encoded,
+                          };
+                    });
+                  }
+              })).then(recs => callback(null, { records: recs }));
+          };
+      Runtime: nodejs18.x
+      Timeout: "300"
+
   FirehoseDeliveryRole:
     Type: "AWS::IAM::Role"
     Properties:
