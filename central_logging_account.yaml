@@ -107,11 +107,11 @@ Resources:
                 Resource:
                   - !Sub "arn:${AWS::Partition}:s3:::${DeliveryBucketName}"
                   - !Sub "arn:${AWS::Partition}:s3:::${DeliveryBucketName}/*"
-              # - Effect: Allow
-              #   Action:
-              #     - "lambda:InvokeFunction"
-              #   Resource:
-              #     - !GetAtt FirehoseDataProcessingFunction.Arn
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource:
+                  - !GetAtt FirehoseDataProcessingFunction.Arn
 
   KinesisFireHose:
     Type: AWS::KinesisFirehose::DeliveryStream
