@@ -1,0 +1,24 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Set up resources for delivery for centralizing logs to S3 in centralized logging account.
+Parameters: 
+  KinesisFireHoseArn:
+    Type: String
+    Description: ARN of the Kinesis FireHose
+  CWLtoKinesisRoleARN:
+    Type: String
+    Description: ARN of the cloudwatch to kinesis role.
+
+Resources:
+  LogDestination: 
+    Type: AWS::Logs::Destination
+    Properties: 
+      DestinationName: "CentralLogDestination"
+      RoleArn: !Ref CWLtoKinesisRoleARN
+      TargetArn: !Ref KinesisFireHoseArn
+      DestinationPolicy: !Sub |
+        '{"Version" : "2012-10-17","Statement" : [{"Effect" : "Allow", "Principal" : {"AWS" : "logs.amazonaws.com"}, "Action" : "logs:PutSubscriptionFilter", "Resource" : "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:destination:CentralLogDestination"}]}'
+
+Outputs:
+  LogDestinationARN:
+    Description: ARN of the to deliver log events to.
+    Value: !GetAtt LogDestination.Arn
