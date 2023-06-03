@@ -24,10 +24,18 @@ Parameters:
     Type: String
     Description: Name of the log group to create the subscription filter
 
+Conditions:
+  cLogGroupName1: !Not [!Equals [!Ref LogGroupName1, ""]]
+  cLogGroupName2: !Not [!Equals [!Ref LogGroupName2, ""]]
+  cLogGroupName3: !Not [!Equals [!Ref LogGroupName3, ""]]
+  cLogGroupName4: !Not [!Equals [!Ref LogGroupName4, ""]]
+  cLogGroupName5: !Not [!Equals [!Ref LogGroupName5, ""]]
+
 Resources:
   # Subscription Filter
   LogGroup1SubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
+    Condition: cLogGroupName1
     Properties: 
       DestinationArn: !Ref DestinationArn
       FilterName: !Ref SubscriptionFilterName
@@ -35,6 +43,7 @@ Resources:
       LogGroupName: !Ref LogGroupName1
   LogGroup2SubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
+    Condition: cLogGroupName2
     Properties: 
       DestinationArn: !Ref DestinationArn
       FilterName: !Ref SubscriptionFilterName
@@ -42,6 +51,7 @@ Resources:
       LogGroupName: !Ref LogGroupName2
   LogGroup3SubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
+    Condition: cLogGroupName3
     Properties: 
       DestinationArn: !Ref DestinationArn
       FilterName: !Ref SubscriptionFilterName
@@ -49,6 +59,7 @@ Resources:
       LogGroupName: !Ref LogGroupName3
   LogGroup4SubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
+    Condition: cLogGroupName4
     Properties: 
       DestinationArn: !Ref DestinationArn
       FilterName: !Ref SubscriptionFilterName
@@ -56,6 +67,7 @@ Resources:
       LogGroupName: !Ref LogGroupName4
   LogGroup5SubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
+    Condition: cLogGroupName5
     Properties: 
       DestinationArn: !Ref DestinationArn
       FilterName: !Ref SubscriptionFilterName
