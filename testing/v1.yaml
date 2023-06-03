@@ -1,0 +1,122 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Set up roles, logs destination, kinesis and delivery stream for centralizing logs to S3 in centralized logging account
+
+Parameters:
+  LoggingS3Bucket:
+    Description: Name of the S3 Logging bucket to write to.
+    MaxLength: 250
+    MinLength: 1
+    Type: String
+  DeliveryStreamName:
+    Type: String
+    Description: Enter the name of the kinesis firehose delivery stream.
+    Default: Centralized-Logging-Delivery-Stream
+  SourceAccounts:
+    Type: String
+    Description: Add Member Account IDs that require log stream to central S3 bucket in this format - "490532490777","065146834721". NOTE To update list, all existing and new accounts must be re-added to the list
+    AllowedPattern: ("\d{12}")+(,"\d{12}"+)*
+
+Resources:
+  # IAM Roles
+  CWLtoFirehoseRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Sid: ''
+          Effect: Allow
+          Principal:
+            Service:
+            - logs.eu-north-1.amazonaws.com
+            - logs.ap-south-1.amazonaws.com
+            - logs.eu-west-3.amazonaws.com
+            - logs.eu-west-2.amazonaws.com
+            - logs.eu-west-1.amazonaws.com
+            - logs.ap-northeast-3.amazonaws.com
+            - logs.ap-northeast-2.amazonaws.com
+            - logs.ap-northeast-1.amazonaws.com
+            - logs.sa-east-1.amazonaws.com
+            - logs.ca-central-1.amazonaws.com
+            - logs.ap-southeast-1.amazonaws.com
+            - logs.ap-southeast-2.amazonaws.com
+            - logs.eu-central-1.amazonaws.com
+            - logs.us-east-1.amazonaws.com
+            - logs.us-east-2.amazonaws.com
+            - logs.us-west-1.amazonaws.com
+            - logs.us-west-2.amazonaws.com
+          Action: 'sts:AssumeRole'
+          Condition:
+            StringLike:
+              aws:SourceArn:
+              - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*"
+      Path: '/'
+      Policies:
+      - PolicyName: CWL_to_Kinesis_Policy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - 'firehose:PutRecord'
+            Resource:
+            - !GetAtt FirehoseLoggingDeliveryStream.Arn
+
+  FirehoseDeliveryRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Sid: ''
+          Effect: Allow
+          Principal:
+            Service: firehose.amazonaws.com
+          Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: Firehose_Delivery_Policy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - 's3:AbortMultipartUpload'
+            - 's3:GetBucketLocation'
+            - 's3:GetObject'
+            - 's3:ListBucket'
+            - 's3:ListBucketMultipartUploads'
+            - 's3:PutObject'
+            Resource:
+            - !Sub 'arn:${AWS::Partition}:s3:::${LoggingS3Bucket}'
+            - !Sub 'arn:${AWS::Partition}:s3:::${LoggingS3Bucket}/*'
+
+  # Log Destination
+  LogDestination:
+    Type: AWS::Logs::Destination
+    Properties:
+      DestinationName: CentralLogDestination
+      RoleArn: !GetAtt 'CWLtoFirehoseRole.Arn'
+      TargetArn: !GetAtt 'FirehoseLoggingDeliveryStream.Arn'
+      DestinationPolicy: !Sub '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":[${SourceAccounts}]},"Action":"logs:PutSubscriptionFilter","Resource":"arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:destination:CentralLogDestination"}]}'
+
+  # Firehose
+  FirehoseLoggingDeliveryStream:
+    Type: 'AWS::KinesisFirehose::DeliveryStream'
+    Properties:
+      DeliveryStreamName: !Ref DeliveryStreamName
+      DeliveryStreamType: DirectPut
+      S3DestinationConfiguration:
+        BucketARN: !Sub 'arn:${AWS::Partition}:s3:::${LoggingS3Bucket}'
+        BufferingHints:
+          IntervalInSeconds: '300'
+          SizeInMBs: '50'
+        CompressionFormat: UNCOMPRESSED
+        Prefix: 'CentralizedAccountLogs/'
+        RoleARN: !GetAtt 'FirehoseDeliveryRole.Arn'
+
+Outputs:
+  DestinationArnExport:
+    Description: ARN for the LogDestination
+    Export:
+      Name: LogDestinationArn
+    Value: !GetAtt 'LogDestination.Arn'
