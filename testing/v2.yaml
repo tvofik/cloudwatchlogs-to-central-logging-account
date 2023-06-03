@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Set up Subscription filters for log groups for streaming logs to S3 in centralized logging account
+
+Parameters:
+  SubscriptionFilterName:
+    Type: String
+    Description: Name of the subscription filter
+  DestinationArn:
+    Type: String
+    Description: ARN for the LogDestination
+  LogGroupName1:
+    Type: String
+    Description: Name of the log group to create the subscription filter
+  LogGroupName2:
+    Type: String
+    Description: Name of the log group to create the subscription filter
+  LogGroupName3:
+    Type: String
+    Description: Name of the log group to create the subscription filter
+  LogGroupName4:
+    Type: String
+    Description: Name of the log group to create the subscription filter
+  LogGroupName5:
+    Type: String
+    Description: Name of the log group to create the subscription filter
+
+Resources:
+  # Subscription Filter
+  LogGroup1SubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties: 
+      DestinationArn: !Ref DestinationArn
+      FilterName: !Ref SubscriptionFilterName
+      FilterPattern: ""
+      LogGroupName: !Ref LogGroupName1
+  LogGroup2SubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties: 
+      DestinationArn: !Ref DestinationArn
+      FilterName: !Ref SubscriptionFilterName
+      FilterPattern: ""
+      LogGroupName: !Ref LogGroupName2
+  LogGroup3SubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties: 
+      DestinationArn: !Ref DestinationArn
+      FilterName: !Ref SubscriptionFilterName
+      FilterPattern: ""
+      LogGroupName: !Ref LogGroupName3
+  LogGroup4SubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties: 
+      DestinationArn: !Ref DestinationArn
+      FilterName: !Ref SubscriptionFilterName
+      FilterPattern: ""
+      LogGroupName: !Ref LogGroupName4
+  LogGroup5SubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties: 
+      DestinationArn: !Ref DestinationArn
+      FilterName: !Ref SubscriptionFilterName
+      FilterPattern: ""
+      LogGroupName: !Ref LogGroupName5
