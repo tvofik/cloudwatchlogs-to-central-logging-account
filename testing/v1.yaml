@@ -50,6 +50,10 @@ Resources:
               - logs.me-south-1.amazonaws.com
               - logs.me-central-1.amazonaws.com
               - logs.sa-east-1.amazonaws.com
+              - logs.us-west-2.amazonaws.com
+              - logs.us-west-1.amazonaws.com
+              - logs.us-east-2.amazonaws.com
+              - logs.us-east-1.amazonaws.com
           Action: 'sts:AssumeRole'
       Path: '/'
       Policies:
