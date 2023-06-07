@@ -1,1 +1,1 @@
-# cloudwatchlogs_to_central_logging_account
+# CloudWatch logs to Central logging account
